@@ -23,6 +23,7 @@ A client that connects to Finnhub using the libwebsockets library, and dumps the
 1. Enter your API key in line `220` 
 
 ![image](https://user-images.githubusercontent.com/45694080/171183033-f2e7b76d-4b90-4665-93c2-16ae161fec80.png)
+
 2. `make`
 3. `./client`
 
