@@ -7,7 +7,7 @@ A client that connects to Finnhub using the libwebsockets library, and dumps the
 ## libwebsockets installation on Debian/Ubuntu
 
 1. `git clone https://github.com/warmcat/libwebsockets.git`
-2. cd to the libwebsockets directory
+2. cd to the libwebsockets directory (Should be `cd libwebsockets`)
 3. `sudo apt-get install libssl-dev`
 4. `mkdir build`
 5. `cd build`
