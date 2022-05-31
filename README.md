@@ -30,4 +30,4 @@ A client that connects to Finnhub using the libwebsockets library, and dumps the
 After a successful connection, the client will continue to run until the <kbd>Ctrl</kbd> + <kbd>Alt</kbd> signal is sent.
 
 ## Results
-A .txt file will be created that contains all the incoming trades, as well as UNIX timestamp in milliseconds at the end of every received message from the server, depicting the time that the parsing of the message was done.
+A .txt file will be created that contains all the incoming trades, as well as UNIX timestamp in milliseconds at the end of every received message from the server, depicting the time that the parsing of the message was finished.
