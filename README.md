@@ -1,5 +1,6 @@
 # lws-finnhub-client
-A client that connects to Finnhub using the libwebsockets library, and dumps the incoming trades into a text file
+A client that connects to Finnhub using the libwebsockets library, and dumps the incoming trades into a text file.
+Made for the RTES course, AUTH, 2022
 
 ## REQUIREMENTS
 - libwebsockets library
