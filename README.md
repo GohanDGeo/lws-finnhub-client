@@ -35,4 +35,6 @@ After a successful connection, the client will continue to run until the <kbd>Ct
 ## Results
 A .txt file will be created that contains all the incoming trades, as well as UNIX timestamp in milliseconds at the end of every received message from the server, depicting the time that the parsing of the message was finished.
 
+After each message, the UNIX timestamp in milliseconds of the moment the parsing of the message was done is also added.
+
 Test 24 hour dump file can be found [here](https://drive.google.com/file/d/1HWfoPxULknHy9CUx5tmmBxhad6zDffQj/view?usp=sharing)
