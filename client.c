@@ -19,8 +19,14 @@
 #define KBRN "\033[0;33m"
 #define RESET "\033[0m"
 
-// Boolean that is =1 if the client should keep running, and =0 to close the client
+// Variable that is =1 if the client should keep running, and =0 to close the client
 static volatile int keepRunning = 1;
+
+// Variable that is =1 if the client is connected, and =0 if not
+static int connection_flag = 0;
+
+// Variable that is =0 if the client should send messages to the server, and =1 otherwise
+static int writeable_flag = 0;
 
 // The pointer to the output file
 static FILE *out_fp;
@@ -38,12 +44,14 @@ static const char *const tok[] = {
     "data[].p",
     "data[].t",
     "data[].v",
+
 };
 
 // Callback function for the LEJP JSON Parser
 static signed char
 cb(struct lejp_ctx *ctx, char reason)
 {
+
     // If the parsed JSON object is one we are interested in (so in the tok array), write to file
     if (reason & LEJP_FLAG_CB_IS_VALUE && (ctx->path_match > 0))
     {
@@ -68,6 +76,11 @@ cb(struct lejp_ctx *ctx, char reason)
     return 0;
 }
 
+// Function used to "write" to the socket, so to send messages to the server
+// @args:
+// ws_in        -> the websocket struct
+// str          -> the message to write/send
+// str_size_in  -> the length of the message
 static int websocket_write_back(struct lws *wsi_in, char *str, int str_size_in)
 {
     if (str == NULL || wsi_in == NULL)
@@ -115,14 +128,17 @@ static int ws_service_callback(
 
     case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
         printf(KRED "[Main Service] Connect with server error: %s.\n" RESET, in);
+        // Set the flag to 0, to show that the connection was lost
+        connection_flag = 0;
         break;
 
     case LWS_CALLBACK_CLOSED:
         printf(KYEL "[Main Service] LWS_CALLBACK_CLOSED\n" RESET);
+        // Set the flag to 0, to show that the connection was lost
+        connection_flag = 0;
         break;
 
     case LWS_CALLBACK_CLIENT_RECEIVE:;
-
         // Incoming messages are handled here
 
         // UNCOMMENT for printing the message on the terminal
@@ -147,33 +163,33 @@ static int ws_service_callback(
 
     case LWS_CALLBACK_CLIENT_WRITEABLE:
 
-        // When writeable, send the server the desired trade symbols to subscribe to
-
+        // When writeable, send the server the desired trade symbols to subscribe to, if not already subscribed
         printf(KYEL "\n[Main Service] On writeable is called.\n" RESET);
-        char *out = NULL;
 
-        char symb_arr[4][50] = {"APPL\0", "AMZN\0", "BINANCE:BTCUSDT\0", "IC MARKETS:1\0"};
-        char str[100];
-        for (int i = 0; i < 4; i++)
+        if (!writeable_flag)
         {
-            sprintf(str, "{\"type\":\"subscribe\",\"symbol\":\"%s\"}", symb_arr[i]);
-            int len = strlen(str);
-            out = (char *)malloc(sizeof(char) * (LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING));
-            memcpy(out + LWS_SEND_BUFFER_PRE_PADDING, str, len);
+            char symb_arr[4][50] = {"APPL\0", "AMZN\0", "BINANCE:BTCUSDT\0", "IC MARKETS:1\0"};
+            char str[100];
+            for (int i = 0; i < 4; i++)
+            {
+                sprintf(str, "{\"type\":\"subscribe\",\"symbol\":\"%s\"}", symb_arr[i]);
+                int len = strlen(str);
+                websocket_write_back(wsi, str, len);
+            }
 
-            lws_write(wsi, out + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
+            // Set the flag to 1, to show that the subscribe request have been sent
+            writeable_flag = 1;
         }
-        free(out);
-
         break;
     case LWS_CALLBACK_CLIENT_CLOSED:
 
-        // If the client is closed for some reason, turn the lws web socket to null, so
-        // to try to reconnect
-        printf(KYEL "\n[Main Service] Client closed.\n" RESET);
-        wsi = NULL;
-        break;
+        // If the client is closed for some reason, set the connection and writeable flags to 0,
+        // so a connection can be re-established
+        printf(KYEL "\n[Main Service] Client closed %s.\n" RESET, in);
+        connection_flag = 0;
+        writeable_flag = 0;
 
+        break;
     default:
         break;
     }
@@ -201,13 +217,14 @@ int main(void)
     // Open the output file
     out_fp = fopen("test_file.txt", "w");
 
-    // Set the LWS
+    // Set the LWS and its context
     struct lws_context *context = NULL;
     struct lws_context_creation_info info;
     struct lws *wsi = NULL;
     struct lws_protocols protocol;
 
     memset(&info, 0, sizeof info);
+
 
     // Set the context of the websocket
     info.port = CONTEXT_PORT_NO_LISTEN;
@@ -246,7 +263,7 @@ int main(void)
 
     // Set the context for the client connection
     clientConnectionInfo.context = context;
-
+    
     // Parse the url
     if (lws_parse_uri(inputURL, &urlProtocol, &clientConnectionInfo.address,
                       &clientConnectionInfo.port, &urlTempPath))
@@ -262,10 +279,11 @@ int main(void)
     while (keepRunning)
     {
         // If the websocket is not connected, connect
-        if (!wsi)
+        if (!connection_flag || !wsi)
         {
             // Set the client information
 
+            connection_flag = 1;
             clientConnectionInfo.port = 443;
             clientConnectionInfo.path = urlPath;
             clientConnectionInfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
