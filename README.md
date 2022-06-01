@@ -22,9 +22,10 @@ Made for the RTES course, AUTH, 2022
 
 ## Usage
 
-1. Enter your API key in line `220` 
+1. Enter your API key
 
-![image](https://user-images.githubusercontent.com/45694080/171183033-f2e7b76d-4b90-4665-93c2-16ae161fec80.png)
+![image](https://user-images.githubusercontent.com/45694080/171420398-a94b0fc4-2953-409f-b0b8-7a7427a16048.png)
+
 
 2. `make`
 3. `./client`
